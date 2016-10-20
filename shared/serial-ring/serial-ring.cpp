@@ -1,4 +1,4 @@
-#include "SerialRing.h"
+#include "serial-ring.h"
 
 /*
 ** SerialRing.cc
