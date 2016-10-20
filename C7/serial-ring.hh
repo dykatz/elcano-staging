@@ -1,13 +1,14 @@
 #pragma once
 
 /*
-** serial-ring.h
+** serial-ring.hh
 ** By Dylan Katz
 **
 ** Manages our protocal for robust communication of SerialData over serial connections
 */
 
-#include <HardwareSerial.h>
+#include <serial/serial.h>
+#include <functional>
 
 namespace elcano {
 
@@ -59,7 +60,7 @@ struct SerialData {
     int32_t probability; //!< Probability that the value is a cone
     
     void clear(void);  //!< Set the values to the defaults
-    bool write(HardwareSerial * /**< Connection to write to */); //!< Write to a serial connection
+    bool write(serial::Serial& /**< Connection to write to */); //!< Write to a serial connection
     bool verify(void); //!< Check that the types match the values
 };
 
@@ -77,49 +78,14 @@ enum class ParseStateError : int8_t {
 
 //! Contains internal state for the SerialData parser.
 struct ParseState {
-    HardwareSerial *dev; //!< Connection to read from
+    serial::Serial *dev; //!< Connection to read from
     SerialData *dt;      //!< SerialData to write to
     
-    ParseStateError update(void); //!< Update the state of the parser based on a single character
+    void update(std::function<void (SerialData*)>); //!< Read as many characters as we can
 private:
     uint8_t state = 0; //!< Internal state variable
+    
+    ParseStateError process(char c); //!< Update the state of the parser based on a single character
 };
 
 } // namespace elcano
-
-/*
-
-When structuring a component, follow the following skeleton:
-
-    elcano::ParseState ps;
-    elcano::SerialData dt;
-    
-    void setup() {
-        Serial1.begin(9600);
-        Serial2.begin(9600);
-        
-        ps.dt  = &dt;
-        ps.dev = &Serial1;
-        dt.clear();
-        
-        // Any other initialization code goes here
-    }
-    
-    void loop() {
-        elcano::ParseStateError r = ps.update();
-        if (r == elcano::ParseStateError::success) {
-            if (dt.kind == elcano::MsgType::DESIRED_TYPE) {
-                // Update code here that depends on having recieved a data set
-            } else {
-                dt.write(&Serial2);
-            }
-        }
-        
-        // Update code here that does not depend on having received a data set
-    }
-
-Replace `DESIRED_TYPE` with {`drive`, `sensor`, `goal`, `seg`} depending on your component.
-
-This ensures that we are sending data around the vehicle in a complete loop.
-    
-*/

@@ -1,7 +1,9 @@
-#include "serial-ring.h"
+#include "serial-ring.hh"
+#include <string>
+#include <iostream>
 
 /*
-** serial-ring.cpp
+** serial-ring.cc
 ** By Dylan Katz
 **
 ** Manages our protocal for robust communication of SerialData over serial connections
@@ -9,9 +11,26 @@
 
 namespace elcano {
 
-ParseStateError ParseState::update(void) {
-    int c = dev->read();
-    if (c == -1) return ParseStateError::unavailable;
+void ParseState::update(std::function<void (SerialData*)> f) {
+    std::string str;
+    dev->read(str);
+    for (uint16_t i = 0; i < str.size(); ++i) {
+        ParseStateError err = process(str[i]);
+        switch (err) {
+        case ParseStateError::success:
+            f(dt);
+            break;
+        case ParseStateError::incomplete:
+            break;
+        default:
+            std::cerr << "error: " << str << std::endl;
+            for (uint16_t j = 0; j < i; ++j) std::cerr << " ";
+            std::cerr << "^" << std::endl;
+        }
+    }
+}
+
+ParseStateError ParseState::process(char c) {
     if (c == ' ' || c == '\t' || c == '\0' || c == '\r') return ParseStateError::incomplete;
     switch(state) {
     case 0:
@@ -85,47 +104,47 @@ STATES(9, 19, 29, '}', 1, posN_cm)
     }
 }
 
-bool SerialData::write(HardwareSerial *dev) {
+bool SerialData::write(serial::Serial &dev) {
     switch (kind) {
-    case MsgType::drive:  dev->print("D"); break;
-    case MsgType::sensor: dev->print("S"); break;
-    case MsgType::goal:   dev->print("G"); break;
-    case MsgType::seg:    dev->print("X"); break;
+    case MsgType::drive:  dev.write("D"); break;
+    case MsgType::sensor: dev.write("S"); break;
+    case MsgType::goal:   dev.write("G"); break;
+    case MsgType::seg:    dev.write("X"); break;
     default:         return false;
     }
     if (number != NaN && (kind == MsgType::goal || kind == MsgType::seg)) {
-        dev->print("{n ");
-        dev->print(number);
-        dev->print("}");
+        dev.write("{n ");
+        dev.write(number);
+        dev.write("}");
     }
     if (speed_cmPs != NaN && kind != MsgType::goal) {
-        dev->print("{s ");
-        dev->print(speed_cmPs);
-        dev->print("}");
+        dev.write("{s ");
+        dev.write(speed_cmPs);
+        dev.write("}");
     }
     if (angle_deg != NaN && (kind == MsgType::drive || kind == MsgType::sensor)) {
-        dev->print("{a ");
-        dev->print(angle_deg);
-        dev->print("}");
+        dev.write("{a ");
+        dev.write(angle_deg);
+        dev.write("}");
     }
     if (bearing_deg != NaN && kind != MsgType::drive) {
-        dev->print("{b ");
-        dev->print(bearing_deg);
-        dev->print("}");
+        dev.write("{b ");
+        dev.write(bearing_deg);
+        dev.write("}");
     }
     if (posE_cm != NaN && posN_cm != NaN && kind != MsgType::drive) {
-        dev->print("{p ");
-        dev->print(posE_cm);
-        dev->print(",");
-        dev->print(posN_cm);
-        dev->print("}");
+        dev.write("{p ");
+        dev.write(posE_cm);
+        dev.write(",");
+        dev.write(posN_cm);
+        dev.write("}");
     }
     if (probability != NaN && kind == MsgType::goal) {
-        dev->print("{r ");
-        dev->print(probability);
-        dev->print("}");
+        dev.write("{r ");
+        dev.write(probability);
+        dev.write("}");
     }
-    dev->print("\n");
+    dev.write("\n");
     return true;
 }
 
