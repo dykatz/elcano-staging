@@ -16,9 +16,6 @@ int main(int argc, char **argv) {
     ps1.dev = &dev1;
     ps1.dt  = &dt1;
     
-    for (;;) {
-        ps1.update([](SerialData *dt) {
-            dt->write(dev2);
-        });
-    }
+    for (;;)
+        ps1.update([&](elcano::SerialData *dt) { dt->write(dev2); });
 }

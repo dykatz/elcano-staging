@@ -1,6 +1,7 @@
 #include "serial-ring.hh"
 #include <string>
 #include <iostream>
+#include <sstream>
 
 /*
 ** serial-ring.cc
@@ -102,49 +103,32 @@ STATES(8, 18, 28, ',', 9, posE_cm)
 STATES(9, 19, 29, '}', 1, posN_cm)
 #undef STATES
     }
+    return ParseStateError::incomplete;
 }
 
 bool SerialData::write(serial::Serial &dev) {
+    std::ostringstream out;
     switch (kind) {
-    case MsgType::drive:  dev.write("D"); break;
-    case MsgType::sensor: dev.write("S"); break;
-    case MsgType::goal:   dev.write("G"); break;
-    case MsgType::seg:    dev.write("X"); break;
+    case MsgType::drive:  out << "D"; break;
+    case MsgType::sensor: out << "S"; break;
+    case MsgType::goal:   out << "G"; break;
+    case MsgType::seg:    out << "X"; break;
     default:         return false;
     }
-    if (number != NaN && (kind == MsgType::goal || kind == MsgType::seg)) {
-        dev.write("{n ");
-        dev.write(number);
-        dev.write("}");
-    }
-    if (speed_cmPs != NaN && kind != MsgType::goal) {
-        dev.write("{s ");
-        dev.write(speed_cmPs);
-        dev.write("}");
-    }
-    if (angle_deg != NaN && (kind == MsgType::drive || kind == MsgType::sensor)) {
-        dev.write("{a ");
-        dev.write(angle_deg);
-        dev.write("}");
-    }
-    if (bearing_deg != NaN && kind != MsgType::drive) {
-        dev.write("{b ");
-        dev.write(bearing_deg);
-        dev.write("}");
-    }
-    if (posE_cm != NaN && posN_cm != NaN && kind != MsgType::drive) {
-        dev.write("{p ");
-        dev.write(posE_cm);
-        dev.write(",");
-        dev.write(posN_cm);
-        dev.write("}");
-    }
-    if (probability != NaN && kind == MsgType::goal) {
-        dev.write("{r ");
-        dev.write(probability);
-        dev.write("}");
-    }
-    dev.write("\n");
+    if (number != NaN && (kind == MsgType::goal || kind == MsgType::seg))
+        out << "{n " << number << "}";
+    if (speed_cmPs != NaN && kind != MsgType::goal)
+        out << "{s " << speed_cmPs << "}";
+    if (angle_deg != NaN && (kind == MsgType::drive || kind == MsgType::sensor))
+        out << "{a " << angle_deg << "}";
+    if (bearing_deg != NaN && kind != MsgType::drive)
+        out << "{b " << bearing_deg << "}";
+    if (posE_cm != NaN && posN_cm != NaN && kind != MsgType::drive)
+        out << "{p " << posE_cm << "," << posN_cm << "}";
+    if (probability != NaN && kind == MsgType::goal)
+        out << "{r " << probability << "}";
+    out << "\n";
+    dev.write(out.str());
     return true;
 }
 
