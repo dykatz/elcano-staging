@@ -145,6 +145,10 @@ bool SerialData::verify(void) {
     case MsgType::drive:
         if (speed_cmPs  == NaN) return false;
         if (angle_deg   == NaN) return false;
+        if (posE_cm     != NaN) return false;
+        if (posN_cm     != NaN) return false;
+        if (bearing_deg != NaN) return false;
+        if (number      != NaN) return false;
         break;
     case MsgType::sensor:
         if (speed_cmPs  == NaN) return false;
@@ -152,12 +156,15 @@ bool SerialData::verify(void) {
         if (posN_cm     == NaN) return false;
         if (bearing_deg == NaN) return false;
         if (angle_deg   == NaN) return false;
+        if (number      != NaN) return false;
         break;
     case MsgType::goal:
         if (number      == NaN) return false;
         if (posE_cm     == NaN) return false;
         if (posN_cm     == NaN) return false;
         if (bearing_deg == NaN) return false;
+        if (speed_cmPs  != NaN) return false;
+        if (angle_deg   != NaN) return false;
         break;
     case MsgType::seg:
         if (number      == NaN) return false;
@@ -165,6 +172,7 @@ bool SerialData::verify(void) {
         if (posN_cm     == NaN) return false;
         if (bearing_deg == NaN) return false;
         if (speed_cmPs  == NaN) return false;
+        if (angle_deg   != NaN) return false;
         break;
     default:
         return false;

@@ -3,6 +3,7 @@
 elcano::ParseState ps1, ps2;
 elcano::SerialData dt1, dt2;
 elcano::ParseStateError err;
+unsigned long start, end;
 
 void setup() {
     Serial.begin(9600);
@@ -14,6 +15,8 @@ void setup() {
 
     ps2.dt  = &dt2;
     ps2.dev = &Serial;
+    
+    start = millis();
 }
 
 void loop() {
@@ -22,6 +25,11 @@ void loop() {
         if (dt1.kind == elcano::MsgType::seg ||
             dt1.kind == elcano::MsgType::sensor) {
             dt1.write(&Serial);
+            
+            Serial.print("Milliseconds per cycle: ");
+            end = millis();
+            Serial.println(end - start);
+            start = end;
         } else {
             dt1.write(&Serial2);
         }
